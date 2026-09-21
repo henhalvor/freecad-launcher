@@ -30,17 +30,19 @@ import {
 import { buildBinaryLaunchPlan } from "./services/launch.js";
 import { launchPlanSession } from "./services/launcher.js";
 import { launchRelease } from "./services/launcher.js";
-import { encodeMediaUrl } from "./services/markdown.js";
+import { encodeMediaUrl, renderMarkdown } from "./services/markdown.js";
 import { fetchMedia } from "./services/media.js";
 import { runMigration } from "./services/migration.js";
 import { getPreview, openWithF3d, tessellateWithFreecad } from "./services/preview.js";
 import { ensureProfileDirs, resolveProfile } from "./services/profiles.js";
 import { projectFromPath, scanProjects, withDisplayNames } from "./services/projects.js";
 import {
+  type GitHubRelease,
   fetchCatalog,
   loadCatalogSnapshot,
   resolveArtifactSha256,
 } from "./services/release-catalog.js";
+import { FREECAD_REPO } from "./services/github.js";
 import { channelStatKey, prStatKey, releaseStatKey } from "./services/stats.js";
 import { meshToStlBuffer } from "./services/stl.js";
 import {
@@ -56,6 +58,7 @@ const pathSchema = z.string().min(1).max(4096);
 const dirSchema = z.string().min(1).max(4096);
 
 const installRequestSchema = z.object({ releaseId: releaseIdSchema });
+const releaseNotesRequestSchema = z.object({ releaseId: releaseIdSchema });
 const removeRequestSchema = z.object({
   releaseId: releaseIdSchema,
   replacementId: releaseIdSchema.nullable().optional(),
@@ -263,6 +266,36 @@ export function registerIpc(ctx: AppContext, options: IpcOptions): void {
       stale: true,
     };
     return ctx.catalog;
+  });
+
+  handle(IPC.catalogReleaseNotes, async (_event, payload: unknown) => {
+    const parsed = releaseNotesRequestSchema.safeParse(payload);
+    if (!parsed.success) throw new Error("Invalid release notes request");
+    const artifact = await findArtifact(parsed.data.releaseId);
+    if (!artifact) throw new Error(`Unknown release ${parsed.data.releaseId}`);
+    let notes = artifact.releaseNotes;
+    let releaseName = artifact.releaseName;
+    // Catalogs cached before notes were captured have no body: fetch it on
+    // demand. Offline, the panel simply reports that notes are unavailable.
+    if (!notes) {
+      try {
+        const response = await ctx.github.get<GitHubRelease>(
+          `/repos/${FREECAD_REPO}/releases/${artifact.releaseId}`,
+        );
+        notes = (response.data.body ?? "").trim();
+        releaseName = releaseName || (response.data.name ?? "").trim();
+      } catch {
+        // Leave notes empty.
+      }
+    }
+    return {
+      releaseId: artifact.id,
+      releaseName: releaseName || artifact.tag,
+      tag: artifact.tag,
+      html: renderMarkdown(notes, { rewriteImage: (url) => encodeMediaUrl(url) }),
+      url: `https://github.com/FreeCAD/FreeCAD/releases/tag/${encodeURIComponent(artifact.tag)}`,
+      publishedAt: artifact.publishedAt,
+    };
   });
 
   handle(IPC.versionsList, async () => {

@@ -19,6 +19,7 @@ const api: LauncherApi = {
 
   fetchCatalog: (force?: boolean) => ipcRenderer.invoke(IPC.catalogFetch, force ?? false),
   cachedCatalog: () => ipcRenderer.invoke(IPC.catalogCached),
+  releaseNotes: (releaseId: string) => ipcRenderer.invoke(IPC.catalogReleaseNotes, { releaseId }),
 
   listVersions: () => ipcRenderer.invoke(IPC.versionsList),
   installRelease: (releaseId: string) => ipcRenderer.invoke(IPC.versionsInstall, { releaseId }),

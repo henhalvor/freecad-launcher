@@ -24,6 +24,8 @@ export const releaseArtifactSchema = z.object({
     .regex(/^([a-f0-9]{64})?$/i)
     .transform((v) => v.toLowerCase()),
   publishedAt: z.string(),
+  releaseName: z.string().default(""),
+  releaseNotes: z.string().default(""),
 });
 
 export const installedReleaseSchema = releaseArtifactSchema.extend({

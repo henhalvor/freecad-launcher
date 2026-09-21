@@ -116,6 +116,8 @@ describe("legacy migration", () => {
         sizeBytes: payload.byteLength,
         sha256: sha256(payload),
         publishedAt: "2024-01-01T00:00:00Z",
+        releaseName: "FreeCAD 1.0.0",
+        releaseNotes: "",
       };
 
       const paths = testPaths(dir);

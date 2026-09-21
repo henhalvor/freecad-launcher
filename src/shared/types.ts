@@ -25,6 +25,10 @@ export interface ReleaseArtifact {
   /** Lower-case hex SHA-256 from the asset digest or its `-SHA256.txt` sibling. */
   sha256: string;
   publishedAt: string;
+  /** Release display name from GitHub, falling back to the tag. */
+  releaseName: string;
+  /** Raw Markdown release notes. Rendered and sanitized in the main process. */
+  releaseNotes: string;
 }
 
 /** A release that has been downloaded, verified and installed. */

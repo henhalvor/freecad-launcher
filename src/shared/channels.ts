@@ -13,6 +13,7 @@ export const IPC = {
   // Catalog
   catalogFetch: "catalog:fetch",
   catalogCached: "catalog:cached",
+  catalogReleaseNotes: "catalog:release-notes",
 
   // Versions
   versionsList: "versions:list",

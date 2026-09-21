@@ -1,4 +1,4 @@
-import type { StatsView, VersionList } from "@shared/api";
+import type { ReleaseNotes, StatsView, VersionList } from "@shared/api";
 import type {
   AppConfig,
   BuildBackend,
@@ -72,6 +72,8 @@ class LauncherStore {
   config = $state<AppConfig | null>(null);
   environment = $state<EnvironmentInfo | null>(null);
   catalog = $state<CatalogResult | null>(null);
+  releaseNotes = $state<Record<string, ReleaseNotes>>({});
+  notesLoading = $state<Record<string, boolean>>({});
   versions = $state<VersionList>({ installed: [], defaults: {} });
   downloads = $state<Record<string, DownloadProgressEvent>>({});
   projects = $state<DisplayProject[]>([]);
@@ -217,7 +219,25 @@ class LauncherStore {
 
   async refreshCatalog(force: boolean): Promise<void> {
     const result = await this.run("catalog", () => api.fetchCatalog(force));
-    if (result) this.catalog = result;
+    if (result) {
+      this.catalog = result;
+      // Catalog refreshes can change the notes; drop the cache.
+      this.releaseNotes = {};
+    }
+  }
+
+  /** Lazily load and cache the rendered release notes for a release. */
+  async loadReleaseNotes(releaseId: string): Promise<ReleaseNotes | null> {
+    const cached = this.releaseNotes[releaseId];
+    if (cached) return cached;
+    this.notesLoading[releaseId] = true;
+    try {
+      const notes = await this.run(`notes:${releaseId}`, () => api.releaseNotes(releaseId));
+      if (notes) this.releaseNotes = { ...this.releaseNotes, [releaseId]: notes };
+      return notes;
+    } finally {
+      this.notesLoading[releaseId] = false;
+    }
   }
 
   async installRelease(releaseId: string): Promise<void> {

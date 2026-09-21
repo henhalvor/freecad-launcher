@@ -98,6 +98,32 @@ describe("asset filtering", () => {
     expect(weekly).toHaveLength(1);
     expect(weekly[0]!.version).toBe("weekly-2024.11.20");
   });
+
+  it("carries release names and notes from GitHub", () => {
+    const { stable } = artifactsFromReleases([
+      release({
+        id: 20,
+        tag_name: "1.0.0",
+        name: "FreeCAD 1.0.0 release",
+        body: "# Highlights\n\n- A fix",
+        assets: [asset("FreeCAD_1.0.0-Linux-x86_64.AppImage", 1, `sha256:${"a".repeat(64)}`)],
+      }),
+    ]);
+    expect(stable[0]!.releaseName).toBe("FreeCAD 1.0.0 release");
+    expect(stable[0]!.releaseNotes).toContain("# Highlights");
+  });
+
+  it("falls back to the tag when a release has no name or notes", () => {
+    const { stable } = artifactsFromReleases([
+      release({
+        id: 21,
+        tag_name: "0.21.2",
+        assets: [asset("FreeCAD_0.21.2-Linux-x86_64.AppImage", 1, `sha256:${"a".repeat(64)}`)],
+      }),
+    ]);
+    expect(stable[0]!.releaseName).toBe("0.21.2");
+    expect(stable[0]!.releaseNotes).toBe("");
+  });
 });
 
 describe("version and checksum parsing", () => {
@@ -216,6 +242,8 @@ describe("catalog fetching", () => {
         sizeBytes: 10,
         sha256: "",
         publishedAt: "2024-01-01T00:00:00Z",
+        releaseName: "FreeCAD 1.0.0",
+        releaseNotes: "",
       };
       const client = new GitHubClient({
         cacheDir: `${dir}/cache`,

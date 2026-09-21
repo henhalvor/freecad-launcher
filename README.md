@@ -19,8 +19,9 @@ The MIT license and the original copyright are preserved in
 ## What it does
 
 - **Versions** — catalog of official stable and weekly FreeCAD releases with
-  offline cache, architecture filtering, update status, verified cancellable
-  downloads, side-by-side installs, per-channel defaults, and removal.
+  offline cache, architecture filtering, update status, inline release notes,
+  verified cancellable downloads, side-by-side installs, per-channel defaults,
+  and removal.
 - **Launching** — always through the Nix-provided `appimage-run` with
   `QT_QPA_PLATFORM=xcb`, a cleaned Qt/Python environment, and the correct
   stable/weekly/PR/vanilla profile. Optional `--single-instance`, tutorial HiDPI

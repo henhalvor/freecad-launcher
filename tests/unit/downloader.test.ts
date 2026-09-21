@@ -29,6 +29,8 @@ function artifactFor(payload: Buffer, overrides: Partial<ReleaseArtifact> = {}):
     sizeBytes: payload.byteLength,
     sha256: sha256(payload),
     publishedAt: "2024-01-01T00:00:00Z",
+    releaseName: "FreeCAD 1.0.0",
+    releaseNotes: "",
     ...overrides,
   };
 }

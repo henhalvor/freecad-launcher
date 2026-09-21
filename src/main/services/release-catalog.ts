@@ -17,6 +17,7 @@ export interface GitHubRelease {
   id: number;
   tag_name: string;
   name?: string | null;
+  body?: string | null;
   draft: boolean;
   prerelease: boolean;
   published_at: string | null;
@@ -163,6 +164,8 @@ export function artifactFromAsset(
     sizeBytes: asset.size,
     sha256: digestFromAsset(asset) ?? "",
     publishedAt: release.published_at ?? new Date(0).toISOString(),
+    releaseName: (release.name ?? "").trim() || release.tag_name,
+    releaseNotes: (release.body ?? "").trim(),
   };
 }
 

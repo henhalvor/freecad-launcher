@@ -50,6 +50,17 @@ export interface StatsView {
 
 export type Unsubscribe = () => void;
 
+export interface ReleaseNotes {
+  releaseId: string;
+  releaseName: string;
+  tag: string;
+  /** Sanitized HTML rendered from the release's Markdown body. */
+  html: string;
+  /** GitHub release page URL. */
+  url: string;
+  publishedAt: string;
+}
+
 /**
  * The complete surface exposed to the renderer through `contextBridge`. It is
  * intentionally narrow: no generic fs, ipc, shell, or process access.
@@ -65,6 +76,7 @@ export interface LauncherApi {
 
   fetchCatalog(force?: boolean): Promise<CatalogResult>;
   cachedCatalog(): Promise<CatalogResult | null>;
+  releaseNotes(releaseId: string): Promise<ReleaseNotes>;
 
   listVersions(): Promise<VersionList>;
   installRelease(releaseId: string): Promise<InstalledRelease | null>;

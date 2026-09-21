@@ -1,4 +1,5 @@
 <script lang="ts">
+import type { ReleaseNotes } from "@shared/api";
 import type { InstalledRelease, ReleaseArtifact, ReleaseChannel } from "@shared/types";
 import Modal from "../components/Modal.svelte";
 import ProgressBar from "../components/ProgressBar.svelte";
@@ -8,6 +9,21 @@ import { store } from "../lib/store.svelte";
 
 let removeTarget = $state<InstalledRelease | null>(null);
 let removeReplacement = $state<string>("");
+let expandedNotes = $state<Record<string, boolean>>({});
+
+function toggleNotes(releaseId: string): void {
+  const open = !expandedNotes[releaseId];
+  expandedNotes = { ...expandedNotes, [releaseId]: open };
+  if (open) void store.loadReleaseNotes(releaseId);
+}
+
+function notesFor(releaseId: string): ReleaseNotes | undefined {
+  return store.releaseNotes[releaseId];
+}
+
+function releaseUrl(tag: string): string {
+  return `https://github.com/FreeCAD/FreeCAD/releases/tag/${encodeURIComponent(tag)}`;
+}
 
 const channels: Array<{ id: ReleaseChannel; label: string }> = [
   { id: "stable", label: "Stable" },
@@ -198,45 +214,80 @@ const removeReplacements = $derived(
             {#each available as release (release.id)}
               {@const progress = store.downloads[release.id]}
               {@const installing = store.isBusy(`install:${release.id}`) || progress?.state === "downloading"}
-              <div class="list-row">
-                <div class="list-main">
-                  <div class="list-title">
-                    {release.version}
-                    {#if isInstalled(release.id)}
-                      <span class="badge success">installed</span>
+              {@const notes = notesFor(release.id)}
+              {@const notesOpen = expandedNotes[release.id] === true}
+              <div class="release-item">
+                <div class="list-row">
+                  <div class="list-main">
+                    <div class="list-title">
+                      {release.version}
+                      {#if isInstalled(release.id)}
+                        <span class="badge success">installed</span>
+                      {/if}
+                    </div>
+                    <div class="list-meta">
+                      <span>{release.tag}</span>
+                      <span>{formatBytes(release.sizeBytes)}</span>
+                      <span>{release.assetName}</span>
+                      <span>published {formatDate(release.publishedAt)}</span>
+                    </div>
+                    {#if progress?.state === "downloading"}
+                      <div style="margin-top: 7px; max-width: 420px;">
+                        <ProgressBar value={progress.percent} label="Downloading {release.assetName}" />
+                        <div class="faint small" style="margin-top: 3px;">
+                          {progress.message ?? `${progress.percent ?? 0}%`}
+                          {#if progress.receivedBytes !== undefined}
+                            · {formatBytes(progress.receivedBytes)}{#if progress.totalBytes} / {formatBytes(progress.totalBytes)}{/if}
+                          {/if}
+                        </div>
+                      </div>
                     {/if}
                   </div>
-                  <div class="list-meta">
-                    <span>{release.tag}</span>
-                    <span>{formatBytes(release.sizeBytes)}</span>
-                    <span>{release.assetName}</span>
-                    <span>published {formatDate(release.publishedAt)}</span>
+                  <div class="row tight">
+                    <button
+                      type="button"
+                      class="small"
+                      aria-expanded={notesOpen}
+                      onclick={() => toggleNotes(release.id)}
+                    >
+                      {notesOpen ? "Hide notes" : "Release notes"}
+                    </button>
+                    {#if installing}
+                      <button type="button" class="small danger" onclick={() => store.cancelInstall(release.id)}>
+                        Cancel
+                      </button>
+                    {:else if isInstalled(release.id)}
+                      <button type="button" class="small" disabled>Installed</button>
+                    {:else}
+                      <button type="button" class="small primary" onclick={() => store.installRelease(release.id)}>
+                        Install
+                      </button>
+                    {/if}
                   </div>
-                  {#if progress?.state === "downloading"}
-                    <div style="margin-top: 7px; max-width: 420px;">
-                      <ProgressBar value={progress.percent} label="Downloading {release.assetName}" />
-                      <div class="faint small" style="margin-top: 3px;">
-                        {progress.message ?? `${progress.percent ?? 0}%`}
-                        {#if progress.receivedBytes !== undefined}
-                          · {formatBytes(progress.receivedBytes)}{#if progress.totalBytes} / {formatBytes(progress.totalBytes)}{/if}
-                        {/if}
-                      </div>
+                </div>
+                {#if notesOpen}
+                  <div class="release-notes">
+                    <div class="notes-head">
+                      <strong>{notes?.releaseName ?? release.releaseName ?? release.tag}</strong>
+                      <span class="muted small">{release.tag} · published {formatDate(release.publishedAt)}</span>
+                      <span class="spacer grow"></span>
+                      <button
+                        type="button"
+                        class="small"
+                        onclick={() => store.openExternal(releaseUrl(release.tag))}
+                      >
+                        Open on GitHub
+                      </button>
                     </div>
-                  {/if}
-                </div>
-                <div class="row tight">
-                  {#if installing}
-                    <button type="button" class="small danger" onclick={() => store.cancelInstall(release.id)}>
-                      Cancel
-                    </button>
-                  {:else if isInstalled(release.id)}
-                    <button type="button" class="small" disabled>Installed</button>
-                  {:else}
-                    <button type="button" class="small primary" onclick={() => store.installRelease(release.id)}>
-                      Install
-                    </button>
-                  {/if}
-                </div>
+                    {#if store.notesLoading[release.id]}
+                      <div class="muted small">Loading release notes…</div>
+                    {:else if notes?.html?.trim()}
+                      <div class="markdown notes-body">{@html notes.html}</div>
+                    {:else}
+                      <div class="muted small">No release notes were published for this release.</div>
+                    {/if}
+                  </div>
+                {/if}
               </div>
             {/each}
           </div>
@@ -282,3 +333,29 @@ const removeReplacements = $derived(
     </button>
   </div>
 </Modal>
+
+<style>
+  .release-item :global(.list-row) {
+    border-bottom: 1px solid var(--border);
+  }
+  .release-item:last-child :global(.list-row) {
+    border-bottom: none;
+  }
+  .release-notes {
+    padding: 10px 12px 14px;
+    border-top: 1px dashed var(--border);
+    background: var(--bg-sunken);
+  }
+  .notes-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .notes-body {
+    max-height: 440px;
+    overflow: auto;
+    padding-right: 4px;
+  }
+</style>

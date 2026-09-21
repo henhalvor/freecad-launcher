@@ -32,6 +32,8 @@ const release: InstalledRelease = {
   sizeBytes: 100,
   sha256: "a".repeat(64),
   publishedAt: "2024-01-01T00:00:00Z",
+  releaseName: "FreeCAD 1.0.0",
+  releaseNotes: "",
   path: "/home/u/.local/share/freecad-launcher/versions/1:2/FreeCAD_1.0.0-Linux-x86_64.AppImage",
   installedAt: "2024-01-01T00:00:00Z",
   verifiedAt: "2024-01-01T00:00:00Z",
