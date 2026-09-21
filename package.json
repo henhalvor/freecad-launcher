@@ -1,0 +1,46 @@
+{
+  "name": "freecad-launcher",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Linux desktop launcher that manages official FreeCAD stable and weekly AppImages, local CAD projects, and FreeCAD pull-request builds on NixOS.",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/main/app.cjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:main": "node scripts/build.mjs --main-only",
+    "build:renderer": "vite build",
+    "dev": "node scripts/dev.mjs",
+    "start": "node scripts/start.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "check:svelte": "svelte-check --tsconfig ./tsconfig.json",
+    "check": "npm run typecheck && npm run check:svelte",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@playwright/test": "^1.49.1",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "@types/node": "^22.10.5",
+    "@types/three": "^0.171.0",
+    "electron": "^33.3.1",
+    "esbuild": "^0.24.2",
+    "svelte": "^5.16.0",
+    "svelte-check": "^4.1.1",
+    "three": "^0.171.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}

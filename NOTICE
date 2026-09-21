@@ -1,0 +1,18 @@
+FreeCAD Launcher
+===============
+
+This project is an Electron + Svelte rewrite of the original Python
+"FreeCAD Smart Launcher" by deltahedra3d:
+
+    https://github.com/deltahedra3d/freecad-launcher
+
+The original work is licensed under the MIT License and its copyright notice
+is preserved in LICENSE.
+
+Upstream FreeCAD release artifacts downloaded by this launcher are published
+by the FreeCAD project at:
+
+    https://github.com/FreeCAD/FreeCAD
+
+This launcher is a Linux desktop helper and is not affiliated with or endorsed
+by the FreeCAD project.

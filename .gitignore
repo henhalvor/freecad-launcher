@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.vite/
+coverage/
+test-results/
+playwright-report/
+.argent/
+*.log
+.DS_Store
+result
+result-*
