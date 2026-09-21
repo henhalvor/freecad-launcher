@@ -1,14 +1,17 @@
 # FreeCAD Launcher
 
+> **A NixOS rewrite of [deltahedra3d/freecad-launcher](https://github.com/deltahedra3d/freecad-launcher).**
+> This project reimplements the original Python "FreeCAD Smart Launcher" as an
+> Electron + Svelte 5 application built for NixOS, where FreeCAD is installed
+> and launched through Nix rather than a bundled Python/Qt runtime.
+
 A Linux desktop application that installs and manages official FreeCAD stable
 and weekly AppImages, launches them with NixOS-safe environment cleanup and
 isolated profiles, browses local CAD projects with previews, and builds/inspects
 FreeCAD pull requests in launcher-owned Git worktrees.
 
-This is an Electron + Svelte 5 rewrite of the Python
-[FreeCAD Smart Launcher](https://github.com/deltahedra3d/freecad-launcher). The
-MIT license and original copyright are preserved in [LICENSE](LICENSE) and
-[NOTICE](NOTICE).
+The MIT license and the original copyright are preserved in
+[LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 > Not affiliated with or endorsed by the FreeCAD project. Installed FreeCAD
 > versions come only from official `FreeCAD/FreeCAD` GitHub releases.
