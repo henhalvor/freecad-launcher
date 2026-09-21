@@ -47,13 +47,30 @@ if (!ready) {
   shutdown(1);
 }
 
+const electronStartedAt = Date.now();
 electron = spawn(electronBin, [root], {
   cwd: root,
   stdio: "inherit",
   env: { ...process.env, FREECAD_LAUNCHER_DEV_SERVER: devServerUrl },
 });
 
-electron.on("exit", (code) => shutdown(code));
+electron.on("exit", (code) => {
+  if (Date.now() - electronStartedAt < 3000) {
+    console.error(
+      [
+        "",
+        "Electron exited almost immediately. A previously started launcher may",
+        "still be running — it hides instead of quitting, so it can keep serving",
+        "an old build.",
+        "",
+        "Quit it (Ctrl+Q in its window, or Settings → Quit launcher), then run",
+        "`npm run dev` again.",
+        "",
+      ].join("\n"),
+    );
+  }
+  shutdown(code);
+});
 electron.on("error", (error) => {
   console.error(`Failed to start Electron: ${error.message}`);
   shutdown(1);

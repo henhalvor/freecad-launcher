@@ -109,7 +109,7 @@ function tessellationMacro(source: string, outputPath: string, maxTriangles: num
     "    sys.stderr.write('preview failed: %s\\n' % exc)",
     "finally:",
     "    with open(out, 'w') as handle:",
-    "        json.dump(triangles[:max_tri], handle)",
+    "        json.dump(triangles[:max_tri * 3], handle)",
     "    try:",
     "        if doc is not None:",
     "            App.closeDocument(doc.Name)",
@@ -117,6 +117,29 @@ function tessellationMacro(source: string, outputPath: string, maxTriangles: num
     "        pass",
     "",
   ].join("\n");
+}
+
+/**
+ * Turn the tessellation macro's JSON output into a mesh.
+ *
+ * The macro emits a flat list of `[x, y, z]` points, where every three points
+ * form one triangle. For robustness a list of flat 9-number triangles is also
+ * accepted.
+ */
+export function meshFromTessellation(value: unknown): MeshData | null {
+  if (!Array.isArray(value)) return null;
+  const positions: number[] = [];
+  for (const entry of value) {
+    if (!Array.isArray(entry)) continue;
+    const take = entry.length >= 9 ? 9 : entry.length >= 3 ? 3 : 0;
+    if (take === 0) continue;
+    const coords = entry.slice(0, take).map(Number);
+    if (coords.some((coordinate) => !Number.isFinite(coordinate))) continue;
+    positions.push(...coords);
+  }
+  const triangleCount = Math.floor(positions.length / 9);
+  if (triangleCount === 0) return null;
+  return { positions: positions.slice(0, triangleCount * 9), triangleCount };
 }
 
 export interface TessellateOptions {
@@ -151,22 +174,20 @@ export async function tessellateWithFreecad(options: TessellateOptions): Promise
   });
   if (options.signal?.aborted) return null;
   if (!(await pathExists(outputPath))) {
-    if (!result.ok) return null;
+    if (!result.ok) {
+      console.error(`[tessellate] FreeCAD failed for ${options.source}: ${result.stderr.slice(-2000)}`);
+    }
     return null;
   }
   try {
     const raw = await readFile(outputPath, "utf8");
-    const triangles = JSON.parse(raw) as number[][];
-    const positions: number[] = [];
-    let count = 0;
-    for (const triangle of triangles) {
-      if (!Array.isArray(triangle) || triangle.length < 9) continue;
-      positions.push(...triangle.slice(0, 9).map(Number));
-      count += 1;
+    const mesh = meshFromTessellation(JSON.parse(raw));
+    if (!mesh) {
+      console.error(`[tessellate] no usable geometry for ${options.source}`);
     }
-    if (count === 0) return null;
-    return { positions, triangleCount: count };
-  } catch {
+    return mesh;
+  } catch (error) {
+    console.error(`[tessellate] could not read ${outputPath}: ${(error as Error).message}`);
     return null;
   } finally {
     await rm(outputPath, { force: true });

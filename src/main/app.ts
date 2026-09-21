@@ -240,20 +240,26 @@ function parseArgsSafely(argv: string[]): CliCommand {
 const rawArgs = appArgsFromArgv(process.argv, app.getAppPath());
 initialCommand = parseArgsSafely(rawArgs);
 
+const isDev = DEV_SERVER_URL !== null;
+
 if (initialCommand.kind === "help" || initialCommand.kind === "version") {
   // These are pure CLI invocations: never take the single-instance lock.
   app.whenReady().then(() => runCommand(initialCommand, "initial"));
-} else if (!app.requestSingleInstanceLock()) {
+} else if (!isDev && !app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on("second-instance", (_event, argv) => {
-    const command = parseArgsSafely(appArgsFromArgv(argv, app.getAppPath()));
-    if (command.kind === "gui") {
-      showWindow();
-      return;
-    }
-    void runCommand(command, "second-instance");
-  });
+  // In dev, skip the single-instance lock. Otherwise a stale launcher from a
+  // previous run keeps serving the UI and the fresh build silently exits.
+  if (!isDev) {
+    app.on("second-instance", (_event, argv) => {
+      const command = parseArgsSafely(appArgsFromArgv(argv, app.getAppPath()));
+      if (command.kind === "gui") {
+        showWindow();
+        return;
+      }
+      void runCommand(command, "second-instance");
+    });
+  }
 
   app.on("window-all-closed", () => {
     // Keep the process alive so FreeCAD sessions can still be tracked.

@@ -2,6 +2,7 @@ import { mkdir, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { disableStartPageInConfig } from "../../src/main/services/freecad-xml.js";
+import { meshFromTessellation } from "../../src/main/services/preview.js";
 import {
   decodeMediaUrl,
   encodeMediaUrl,
@@ -134,6 +135,35 @@ describe("STL handling", () => {
     const parsed = parseStlBuffer(buffer);
     expect(parsed.triangleCount).toBe(1);
     expect(parsed.positions.slice(0, 9)).toEqual(mesh.positions);
+  });
+});
+
+describe("tessellation output parsing", () => {
+  it("parses the macro's flat list of points into triangles", () => {
+    // Three points (one triangle), exactly how the FreeCAD macro emits them.
+    const mesh = meshFromTessellation([
+      [0, 0, 0],
+      [1, 0, 0],
+      [0, 1, 0],
+      [1, 0, 0],
+      [1, 1, 0],
+      [0, 1, 0],
+    ]);
+    expect(mesh?.triangleCount).toBe(2);
+    expect(mesh?.positions).toHaveLength(18);
+    expect(mesh?.positions.slice(0, 9)).toEqual([0, 0, 0, 1, 0, 0, 0, 1, 0]);
+  });
+
+  it("also accepts flat 9-number triangles", () => {
+    const mesh = meshFromTessellation([[0, 0, 0, 1, 0, 0, 0, 1, 0]]);
+    expect(mesh?.triangleCount).toBe(1);
+  });
+
+  it("rejects empty, malformed and non-finite input", () => {
+    expect(meshFromTessellation([])).toBeNull();
+    expect(meshFromTessellation(null)).toBeNull();
+    expect(meshFromTessellation([[0, 0]])).toBeNull();
+    expect(meshFromTessellation([[0, 0, 0], [1, 0, 0], ["x", 0, 0]])).toBeNull();
   });
 });
 
